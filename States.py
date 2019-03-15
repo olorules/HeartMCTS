@@ -1,7 +1,7 @@
 from Deck import HAND_SIZE, id_from
 
 
-class HalfState:
+class HalfState: # player state
     def __init__(self, deck):
         self.deck = list(deck)
         self.hand = []
@@ -13,12 +13,15 @@ class HalfState:
 
     def take_card(self):
         if len(self.deck) > 0 and len(self.hand) < HAND_SIZE:
+            #Draw a card
             self.hand.append(self.deck[0])
             self.deck = self.deck[1:]
         elif len(self.deck) == 0:
+            # exhaustion
             self.times_taken_dmg += 1
             self.hp -= self.times_taken_dmg
         elif len(self.hand) >= HAND_SIZE:
+            #Hand is full
             self.trash.append(self.deck[0])
             self.deck = self.deck[1:]
 
@@ -32,6 +35,8 @@ class HalfState:
             self.hand.remove(card)
             self.on_table.append(card)
             self.mana -= card.cost
+        else:
+            raise Exception('Nie możesz wykonać tego ruchu.')
 
 
 class GameState:
@@ -39,9 +44,6 @@ class GameState:
         self.player_states = [half1, half2]
         self.player_turn = player_turn
         self.turn_index = turn_index
-
-    def get_curr_player_id(self):
-        return -1 if self.player_turn else -2
 
     def curr_player(self) -> HalfState:
         return self.player_states[self.player_turn]
