@@ -25,9 +25,9 @@ class HalfState: # player state
             self.trash.append(self.deck[0])
             self.deck = self.deck[1:]
 
-    def add_mana(self, num):
+    def add_mana(self, turn_index):
         #TODO: limit max mana?
-        self.mana = min(self.mana+num, 10)
+        self.mana = min(turn_index, 10)
 
     def play_card(self, id):
         card = id_from(self.hand, id)
@@ -59,6 +59,10 @@ class GameState:
     @staticmethod
     def generate_starting_state(deck1, deck2):
         game_state = GameState(HalfState(deck1), HalfState(deck2), 0, 0)
+        for elem in range(2):
+            for elem2 in range(2):
+                game_state.take_card(elem)
+        game_state.take_card(1)
         return game_state
 
     def add_mana(self, player=None):
