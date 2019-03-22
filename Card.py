@@ -7,13 +7,13 @@ class Card:
         Card.next_id += 1
         return Card.next_id
 
-    def __init__(self, att, hp, cost, fresh):
+    def __init__(self, att, hp, cost, can_att):
         self.id = Card.get_next_id()
         self.att = att
         self.hp = hp
         self.cost = cost
-        self.fresh = fresh
+        self.can_att = can_att
 
     def __str__(self):
-        return "({:2}{} att:{}, hp:{}, cost:{})".format(self.id, '!' if self.fresh else ':', self.att, self.hp, self.cost)
+        return "({:2}{} att:{}, hp:{}, cost:{})".format(self.id, '!' if self.can_att else ':', self.att, self.hp, self.cost)
 

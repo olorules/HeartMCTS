@@ -6,9 +6,15 @@ class HeroAttPlayer:
         self.name = 'HeroAttPlayer'
 
     def move(self, state: GameState):
-        # for card in state.curr_player().on_table:
-        #     if card.can_att:
-        #         return [card.id, ]
+        for card in state.curr_player().on_table:
+            if card.can_att:
+                return [Action.AttackHero, card.id]
+        if len(state.curr_player().on_table) < HAND_SIZE:
+            for card in state.curr_player().hand:
+                if card.cost <= state.curr_player().mana:
+                    return [Action.PlayCard, card.id]
+
+        return []
         return []
 
 

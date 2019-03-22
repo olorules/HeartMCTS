@@ -14,6 +14,7 @@ class Game:
         done = False
         while not done:
             action = self.players[self.state.player_turn].move(self.state)
+            print(action)
             if 0 < len(action) <= 3:
                 self.state.make_action(*action)
                 self.draw()
@@ -25,8 +26,8 @@ class Game:
         self.draw()
         while self.state.player_states[0].hp > 0 and self.state.player_states[1].hp > 0:
             self.move()
-            #input('click enter...')
-        print('winner chicken dinner: {}'.format(0 if self.state.player_states[0].hp > 0 else 1))
+            # input('click enter...')
+        print('winner chicken dinner: {}'.format(self.players[0].name if self.state.player_states[0].hp > 0 else self.players[1].name))
 
     def draw(self):
         print('||||||||||||||||||||||||||||||||||||||||||||||||||||||||')
@@ -40,11 +41,5 @@ class Game:
             for s, args in strings_to_print if i % 2 == 0 else strings_to_print[::-1]:
                 print(s.format(*args(i)))
             print('--------')
-        # for i in range(len(self.players)):
-        #     print("{}{}: HP:{} MANA:{} {}".format(self.players[i].name, i, self.state.player_states[i].hp, self.state.player_states[i].mana, 'turn' if self.state.player_turn == i else ''))
-        #     print("Deck left: {}".format(len(self.state.player_states[i].deck)))
-        #     print("Hand: {}".format([str(e) for e in self.state.player_states[i].hand]))
-        #     print("Table: {}".format([str(e) for e in self.state.player_states[i].on_table]))
-        #     print('----------------')
 
 

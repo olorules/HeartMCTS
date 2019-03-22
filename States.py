@@ -71,6 +71,9 @@ class GameState:
         self.player_states[player].add_mana(min(self.turn_index // 2 + 1, 10))
 
     def turn_start(self):
+        for ps in self.player_states:
+            for card in ps.on_table:
+                card.can_att = True
         self.take_card()
         self.add_mana()
 
@@ -92,7 +95,9 @@ class GameState:
                 self.curr_player().on_table.remove(card)
             if target.hp <= 0:
                 self.other_player().on_table.remove(target)
+            card.can_att = False
         elif action_id == 2:
             #att card on hero
             card = id_from(self.curr_player().on_table, id1)
             self.other_player().hp -= card.att
+            card.can_att = False
