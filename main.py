@@ -1,7 +1,9 @@
 from Game import Game
+from Players import HeroAttPlayer, UIPlayer, MTCSPlayer
 
 def main():
-    g = Game()
+    # g = Game([MTCSPlayer(), UIPlayer()])
+    g = Game([MTCSPlayer(), HeroAttPlayer()])
     g.play()
 
 
