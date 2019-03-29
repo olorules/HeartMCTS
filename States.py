@@ -1,5 +1,6 @@
 from Deck import HAND_SIZE, id_from
 from Card import Card, CardType
+import itertools
 
 class HalfState: # player state
     def __init__(self, deck, hand=None, on_table=None, trash=None, hp=20, mana=0, times_taken_dmg=0):
@@ -140,3 +141,16 @@ class GameState:
             card = id_from(self.curr_player().on_table, id1)
             self.other_player().hp -= card.att
             card.can_att = False
+        elif action_id == 3: # check possible attacks
+            print(list(self.possible_plays()))
+
+
+    def possible_plays(self):
+        res = []
+        for card in self.curr_player().on_table:
+            poss_attacks = [[2, card.id]]
+            for target in self.other_player().on_table:
+                poss_attacks.append([1,card.id, target.id])
+            res.append(poss_attacks)
+        #return res
+        return itertools.product(*res)
