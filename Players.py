@@ -46,7 +46,7 @@ class MTCSPlayer:
             self.node_type = node_type
 
         def calc_score(self,  c):
-            return (self.q / self.n) + c * np.sqrt((2 * np.log(self.parent.n)) / self.n)
+            return (self.q / self.n) + c * np.sqrt((2 * np.log(self.parent.n)) / self.n) if self.n > 0 else -99999999
 
         def apply_backprop(self, delta, n):
             if self.num_children() == 0:
