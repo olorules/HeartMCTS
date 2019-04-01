@@ -1,6 +1,7 @@
 import time
 import numpy as np
 import itertools
+from random import sample
 
 from States import GameState
 from Action import Action
@@ -16,6 +17,31 @@ def list_of_combs(arr, max_len):
         combs.extend(listing)
     return combs
 
+def list_of_possible_card_plays(curr_hand, spots_on_table, mana):
+    plays = list_of_combs(curr_hand, spots_on_table)
+    return [[[Action.PlayCard, card.id] for card in play] for play in plays if
+                        np.sum([card.cost for card in play]) <= mana]
+
+
+class RandomPlayer:
+    def __init__(self):
+        self.name = 'RandomPlayer'
+
+    def move(self, state: GameState):
+
+        curr_hand = state.curr_player().hand
+        curr_table = state.curr_player().on_table
+        other_table = state.other_player().on_table
+        spots_on_table = TABLE_SIZE - len(curr_table)
+
+        lst_of_plays = list_of_possible_card_plays(curr_hand, spots_on_table, state.curr_player().mana)
+        all_posible_plays = [a + b for a, b in list(itertools.product(lst_of_plays,
+                                                                     [list(e) for e in state.possible_plays()]))]
+
+        smpl = sample(all_posible_plays, k=1)
+        return smpl[0]
+
+
 class HeroAttPlayer:
     def __init__(self):
         self.name = 'HeroAttPlayer'
@@ -30,6 +56,7 @@ class HeroAttPlayer:
                     return [Action.PlayCard, card.id]
 
         return []
+
 
 
 class PlayCardPlayer:
@@ -94,8 +121,8 @@ class MTCSPlayer:
                 curr_table = self.game_state.curr_player().on_table
                 other_table = self.game_state.other_player().on_table
                 spots_on_table = TABLE_SIZE - len(curr_table)
-                plays = list_of_combs(curr_hand, spots_on_table)
-                legal_play_cards = [[[Action.PlayCard, card.id] for card in play] for play in plays if np.sum([card.cost for card in play]) <= self.game_state.curr_player().mana]
+
+                legal_play_cards = list_of_possible_card_plays(curr_hand, spots_on_table, self.game_state.curr_player().mana)
 
                 all_posible_plays = [a + b for a, b in list(itertools.product(legal_play_cards, [list(e) for e in self.game_state.possible_plays()]))]
 

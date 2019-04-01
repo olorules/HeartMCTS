@@ -1,7 +1,7 @@
 from Card import Card
 
 HAND_SIZE = 5
-TABLE_SIZE = 7
+TABLE_SIZE = 5
 
 
 def id_from(cards: [Card], id: int):
