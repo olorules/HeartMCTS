@@ -32,6 +32,19 @@ class HeroAttPlayer:
         return []
 
 
+class PlayCardPlayer:
+    def __init__(self):
+        self.name = 'PlayCardPlayer'
+
+    def move(self, state: GameState):
+        if len(state.curr_player().on_table) < TABLE_SIZE:
+            for card in state.curr_player().hand:
+                if card.cost <= state.curr_player().mana:
+                    return [Action.PlayCard, card.id]
+
+        return []
+
+
 class MTCSPlayer:
     class MTCSNode(Tree):
         def __init__(self, game_state: GameState=None, actions_from_parent=None, node_type=None, card_type=None, prob=None):

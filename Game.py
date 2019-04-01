@@ -6,7 +6,7 @@ class Game:
     def __init__(self, players, state=None, can_print=True):
         # self.players = [HeroAttPlayer(), UIPlayer()]
         self.players = players
-        self.state = GameState.generate_starting_state(Deck.generete_dummy(20), Deck.generete_dummy(20)) if state is None else state
+        self.state = GameState.generate_starting_state(Deck.generete_deck(20), Deck.generete_deck(20)) if state is None else state
         self.can_print = can_print
 
     def move(self):
