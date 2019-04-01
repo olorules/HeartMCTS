@@ -58,8 +58,8 @@ class MTCSPlayer:
                 self.q += delta
                 return delta
             elif self.node_type == 'random':
-                self.n += n
-                self.q += delta*n
+                self.n += 1  # n
+                self.q += delta  # delta*n
                 return 0 if delta == 1 else 0
 
         def gen_all_child_states(self):
@@ -82,17 +82,19 @@ class MTCSPlayer:
                 other_table = self.game_state.other_player().on_table
                 spots_on_table = TABLE_SIZE - len(curr_table)
                 plays = list_of_combs(curr_hand, spots_on_table)
-                legal_plays = [[[Action.PlayCard, card.id] for card in play] for play in plays if np.sum([card.cost for card in play]) <= self.game_state.curr_player().mana]
-                legal_att = [[Action.AttCardOnCard, c1.id, c2.id] for c1, c2 in zip(curr_table, other_table)]
-                if len(legal_att) == 0:
-                    legal_att = [[Action.AttackHero, c1.id] for c1 in curr_table]
-                new_states_actions = [play + legal_att for play in legal_plays]
+                legal_play_cards = [[[Action.PlayCard, card.id] for card in play] for play in plays if np.sum([card.cost for card in play]) <= self.game_state.curr_player().mana]
+
+                all_posible_plays = [a + b for a, b in list(itertools.product(legal_play_cards, [list(e) for e in self.game_state.possible_plays()]))]
+
                 new_children = []
-                for nsa in new_states_actions:
-                    new_state = self.game_state.copy()
-                    for a in nsa:
-                        new_state.make_action(*a)
-                    new_children.append(MTCSPlayer.MTCSNode(new_state, node_type='random', actions_from_parent=nsa))
+                for nsa in all_posible_plays:
+                    try:
+                        new_state = self.game_state.copy()
+                        for a in nsa:
+                            new_state.make_action(*a)
+                        new_children.append(MTCSPlayer.MTCSNode(new_state, node_type='random', actions_from_parent=nsa))
+                    except:
+                        pass
                 self.add_children(new_children)
 
     def __init__(self):
@@ -109,8 +111,8 @@ class MTCSPlayer:
             self.tree = MTCSPlayer.MTCSNode(state, node_type='move')
 
         start_time = time.process_time()
-        #while time.process_time() - start_time < self.time_per_move:
-        for i in range(30):
+        while time.process_time() - start_time < self.time_per_move:
+        # for i in range(30):
             v1 = self.tree_policy(self.tree)
             delta = self.default_policy(v1)
             self.backup(v1, delta)
@@ -133,9 +135,14 @@ class MTCSPlayer:
         return self.tree_policy(self.best_child(node, 1/np.sqrt(2)))
 
     def best_child(self, node: MTCSNode, cp):
-        scores = np.array([child.calc_score(cp) for child in node.get_children()])
-        best_ind = np.argmax(scores)
-        return node.get_children()[best_ind]
+        if node.node_type == 'move':
+            scores = np.array([child.calc_score(cp) for child in node.get_children()])
+            best_ind = np.argmax(scores)
+            return node.get_children()[best_ind]
+        else:
+            probs = np.array([c.prob for c in node.get_children()])
+            chosen = np.argmax(np.random.multinomial(1, probs / np.sum(probs)))
+            return node.get_children()[chosen]
 
     def default_policy(self, node: MTCSNode):
         players = [HeroAttPlayer(), HeroAttPlayer()]
