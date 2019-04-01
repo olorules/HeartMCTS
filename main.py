@@ -1,10 +1,10 @@
 from Game import Game
-from Players import HeroAttPlayer, UIPlayer, MTCSPlayer
+from Players import HeroAttPlayer, UIPlayer, MTCSPlayer, PlayCardPlayer
 
 def main():
     # g = Game([MTCSPlayer(), UIPlayer()])
-    # g = Game([MTCSPlayer(), HeroAttPlayer()])
-    g = Game((HeroAttPlayer(),UIPlayer()))
+    g = Game([MTCSPlayer(), PlayCardPlayer()])
+    # g = Game((HeroAttPlayer(),UIPlayer()))
     g.play()
 
 
