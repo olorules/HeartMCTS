@@ -140,7 +140,7 @@ class MTCSPlayer:
                 self.add_children(new_children)
 
         def __str__(self):
-            return "p: {:0=.6f}, q: {:0=4d}, n: {:0=4d} | ".format(self.prob, self.q, self.n) + \
+            return "p: {:0=.6f}, q: {:0=4d}, n: {:0=4d}, sc: {:0=4f} | ".format(self.prob, self.q, self.n, self.q / self.n if self.n != 0 else 0) + \
                    (str(self.actions_from_parent) if self.actions_from_parent is not None else str(self.card_type))
 
     def __init__(self, cp_base, time_per_move):
@@ -165,7 +165,7 @@ class MTCSPlayer:
                 ind = [e.game_state for e in nodes].index(state)
                 self.tree = nodes[ind]
             except:
-                # TODO: select sub tree from root node's children, not create new
+                # searched node was never created
                 self.tree = MTCSPlayer.MTCSNode(state, node_type='move')
 
         start_time = time.process_time()
