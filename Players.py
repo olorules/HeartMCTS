@@ -163,7 +163,7 @@ class MTCSPlayer:
                     )
                 ))
                 ind = [e.game_state for e in nodes].index(state)
-                self.tree = MTCSPlayer.MTCSNode(nodes[ind], node_type='move')
+                self.tree = nodes[ind]
             except:
                 # TODO: select sub tree from root node's children, not create new
                 self.tree = MTCSPlayer.MTCSNode(state, node_type='move')
