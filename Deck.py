@@ -10,6 +10,11 @@ def id_from(cards: [Card], id: int):
 
 class Deck:
     @staticmethod
+    def equals(a: [Card], b: [Card]):
+        return len(a) == len(b) and \
+            all(a.count(i) == b.count(i) for i in a)
+
+    @staticmethod
     def generete_dummy(n):
         return [Card(2, 2, 1, False) for _ in range(n)]
 

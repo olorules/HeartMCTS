@@ -43,3 +43,11 @@ class Card:
     def __str__(self):
         return "({:2}{} att:{}, hp:{}/{}, cost:{})".format(self.id, '!' if self.can_att else ':', self.att, self.hp, self.max_hp, self.cost)
 
+    def __eq__(self, other):
+        return self.att == other.att and \
+            self.hp == other.hp and \
+            self.max_hp == other.max_hp and \
+            self.cost == other.cost and \
+            self.can_att == other.can_att
+
+

@@ -8,7 +8,7 @@ from Action import Action
 from Tree import Tree
 from Deck import Deck, TABLE_SIZE, HAND_SIZE
 from Game import Game
-
+import pandas as pd
 
 def list_of_combs(arr, max_len):
     combs = []
@@ -143,22 +143,34 @@ class MTCSPlayer:
             return "p: {:0=.6f}, q: {:0=4d}, n: {:0=4d} | ".format(self.prob, self.q, self.n) + \
                    (str(self.actions_from_parent) if self.actions_from_parent is not None else str(self.card_type))
 
-    def __init__(self):
+    def __init__(self, cp_base, time_per_move):
         self.name = 'MTCSPlayer'
         self.tree: MTCSPlayer.MTCSNode = None
-        self.time_per_move = 1.0
+        self.time_per_move = time_per_move
+        self.cp_base = cp_base
 
     def move(self, state: GameState):
         if self.tree is None:
             # create tree
             self.tree = MTCSPlayer.MTCSNode(state, node_type='move')
         else:
-            # TODO: select sub tree from root node's children, not create new
-            self.tree = MTCSPlayer.MTCSNode(state, node_type='move')
+            try:
+                nodes = list(itertools.chain.from_iterable(
+                    itertools.chain.from_iterable(
+                        itertools.chain.from_iterable(
+                            [[[o.children for o in m.children] for m in n.children] for n in self.tree.children]
+                        )
+                    )
+                ))
+                ind = [e.game_state for e in nodes].index(state)
+                self.tree = MTCSPlayer.MTCSNode(nodes[ind], node_type='move')
+            except:
+                # TODO: select sub tree from root node's children, not create new
+                self.tree = MTCSPlayer.MTCSNode(state, node_type='move')
 
         start_time = time.process_time()
-        # while time.process_time() - start_time < self.time_per_move:
-        for i in range(4000):
+        while time.process_time() - start_time < self.time_per_move:
+        # for i in range(600):
             v1 = self.tree_policy(self.tree)
             delta = self.default_policy(v1)
             self.backup(v1, delta)
@@ -178,13 +190,13 @@ class MTCSPlayer:
                 child.fresh = False
                 return child
 
-        return self.tree_policy(self.best_child(node, 1/np.sqrt(2)))
+        return self.tree_policy(self.best_child(node, self.cp_base))
 
     def best_child(self, node: MTCSNode, cp):
         if node.node_type == 'move':
             scores = np.array([child.calc_score(cp) for child in node.get_children()])
-            if cp == 0:
-                print(scores)
+            # if cp == 0:
+            #     print(scores)
             best_ind = np.argmax(scores)
             return node.get_children()[best_ind]
         else:
@@ -194,8 +206,8 @@ class MTCSPlayer:
             return node.get_children()[chosen]
 
     def default_policy(self, node: MTCSNode):
-        #todo random on random
-        players = [HeroAttPlayer(), HeroAttPlayer()]
+        # players = [HeroAttPlayer(), HeroAttPlayer()]
+        players = [RandomPlayer(), RandomPlayer()]
         new_state = node.game_state.copy()
         game = Game(players, new_state, False)
         starter_player_id = game.curr_player_id()
@@ -217,7 +229,7 @@ class UIPlayer:
 
     def move(self, state: GameState):
         string = input('Podaj akcje ([0,2] [id]? [id]?):')
-        if string == '':
+        if string == '' or string == 'n':
             return []
         command = string.split(' ')
         return [int(e) for e in command]

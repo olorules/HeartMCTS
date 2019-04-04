@@ -1,4 +1,4 @@
-from Deck import HAND_SIZE, id_from
+from Deck import HAND_SIZE, id_from, Deck
 from Card import Card, CardType
 import itertools
 
@@ -68,6 +68,17 @@ class HalfState: # player state
             self.mana -= card.cost
         else:
             raise Exception('Nie możesz wykonać tego ruchu.')
+
+    def __eq__(self, other):
+        return self.times_taken_dmg == other.times_taken_dmg and \
+            self.mana == other.mana and \
+            self.hp == other.hp and \
+            len(self.on_table) == len(other.on_table) and \
+            len(self.hand) == len(other.hand) and \
+            len(self.deck) == len(other.deck) and \
+            Deck.equals(self.on_table, other.on_table) and \
+            Deck.equals(self.hand, other.hand) and \
+            Deck.equals(self.deck, other.deck)
 
 
 class GameState:
@@ -154,3 +165,9 @@ class GameState:
             res.append(poss_attacks)
         #return res
         return itertools.product(*res)
+
+    def __eq__(self, other):
+        return self.player_turn == other.player_turn and \
+            self.turn_index == other.turn_index and \
+            self.player_states[0] == other.player_states[0] and \
+            self.player_states[1] == other.player_states[1]

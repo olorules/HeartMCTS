@@ -19,7 +19,8 @@ class Game:
                 for action in actions:
                     print(action) if self.can_print else None
                     if(len(action) >2):
-                        if set([action[2],action[1]]) not in self.state.curr_player().on_table + self.state.other_player().on_table:
+                        cards_ids = [c.id for c in self.state.curr_player().on_table + self.state.other_player().on_table]
+                        if (action[2] not in cards_ids) or (action[1] not in cards_ids):
                             continue
 
 
@@ -49,6 +50,7 @@ class Game:
             # input('click enter...')
         winner_id = self.winner_id()
         print('winner chicken dinner: {}{}'.format(self.players[winner_id].name, winner_id)) if self.can_print else None
+        return winner_id
 
     def draw(self):
         if not self.can_print:
