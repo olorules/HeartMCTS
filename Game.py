@@ -14,10 +14,15 @@ class Game:
         self.draw()
         done = False
         while not done:
-            if self.players[self.state.player_turn].name == 'MTCSPlayer':
+            if self.players[self.state.player_turn].name == 'MTCSPlayer' or self.players[self.state.player_turn].name == 'RandomPlayer':
                 actions = self.players[self.state.player_turn].move(self.state)
                 for action in actions:
                     print(action) if self.can_print else None
+                    if(len(action) >2):
+                        if set([action[2],action[1]]) not in self.state.curr_player().on_table + self.state.other_player().on_table:
+                            continue
+
+
                     self.state.make_action(*action)
                     self.draw()
                 done = True
