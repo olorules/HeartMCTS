@@ -8,6 +8,9 @@ class CardType:
     def __eq__(self, other):
         return self.att == other.att and self.cost == other.cost and self.max_hp == other.max_hp
 
+    def __str__(self):
+        return "(att:{}, hp:{}, cost:{})".format(self.att, self.max_hp, self.cost)
+
 class Card:
     next_id = 0
 

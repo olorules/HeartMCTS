@@ -78,9 +78,11 @@ class MTCSPlayer:
         def gen_all_child_states(self):
             if self.node_type == 'random':
                 curr_deck = self.game_state.curr_player().deck
-                grouped = Deck.group(curr_deck)
+                other_deck = self.game_state.other_player().deck
+                grouped = Deck.group(other_deck)
                 types = [group[0].get_type() for group in grouped]
                 probs = [len(group)/len(grouped) for group in grouped]
+                probs /= np.sum(probs)
                 new_children = []
                 for t, p in zip(types, probs):
                     new_state = self.game_state.copy()
@@ -110,6 +112,10 @@ class MTCSPlayer:
                         pass
                 self.add_children(new_children)
 
+        def __str__(self):
+            return "p: {:0=.6f}, q: {:0=4d}, n: {:0=4d} | ".format(self.prob, self.q, self.n) + \
+                   (str(self.actions_from_parent) if self.actions_from_parent is not None else str(self.card_type))
+
     def __init__(self):
         self.name = 'MTCSPlayer'
         self.tree: MTCSPlayer.MTCSNode = None
@@ -124,8 +130,8 @@ class MTCSPlayer:
             self.tree = MTCSPlayer.MTCSNode(state, node_type='move')
 
         start_time = time.process_time()
-        while time.process_time() - start_time < self.time_per_move:
-        # for i in range(30):
+        # while time.process_time() - start_time < self.time_per_move:
+        for i in range(4000):
             v1 = self.tree_policy(self.tree)
             delta = self.default_policy(v1)
             self.backup(v1, delta)
@@ -150,14 +156,18 @@ class MTCSPlayer:
     def best_child(self, node: MTCSNode, cp):
         if node.node_type == 'move':
             scores = np.array([child.calc_score(cp) for child in node.get_children()])
+            if cp == 0:
+                print(scores)
             best_ind = np.argmax(scores)
             return node.get_children()[best_ind]
         else:
             probs = np.array([c.prob for c in node.get_children()])
-            chosen = np.argmax(np.random.multinomial(1, probs / np.sum(probs)))
+            probs /= np.sum(probs)
+            chosen = np.argmax(np.random.multinomial(1, probs))
             return node.get_children()[chosen]
 
     def default_policy(self, node: MTCSNode):
+        #todo random on random
         players = [HeroAttPlayer(), HeroAttPlayer()]
         new_state = node.game_state.copy()
         game = Game(players, new_state, False)
