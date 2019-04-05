@@ -1,6 +1,7 @@
 from Deck import HAND_SIZE, id_from, Deck
 from Card import Card, CardType
 import itertools
+from Action import Action
 TABLE_SIZE = 5
 
 
@@ -135,10 +136,10 @@ class GameState:
         self.turn_index += 1
 
     def make_action(self, action_id, id1=None, id2=None):
-        if action_id == 0:
+        if action_id == Action.PlayCard:
             #play card
             self.curr_player().play_card(id1)
-        elif action_id == 1:
+        elif action_id == Action.AttCardOnCard:
             #att card on card
             card = id_from(self.curr_player().on_table, id1)
             target = id_from(self.other_player().on_table, id2)
@@ -149,7 +150,7 @@ class GameState:
             if target.hp <= 0:
                 self.other_player().on_table.remove(target)
             card.can_att = False
-        elif action_id == 2:
+        elif action_id == Action.AttackHero:
             #att card on hero
             card = id_from(self.curr_player().on_table, id1)
             self.other_player().hp -= card.att

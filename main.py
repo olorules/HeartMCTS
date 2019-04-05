@@ -1,5 +1,5 @@
 from Game import Game
-from Players import HeroAttPlayer, UIPlayer, MTCSPlayer, PlayCardPlayer, RandomPlayer
+from Players import HeroAttPlayer, UIPlayer, MTCSPlayer, PlayCardPlayer, RandomPlayer, HeuristicPlayer
 import numpy as np
 import pandas as pd
 import datetime
@@ -12,7 +12,7 @@ import pickle as pkl
 def runner(params):
     try:
         np.random.seed(params['seed'])
-        oponent = RandomPlayer() if params['op'] == 'Random' else (HeroAttPlayer() if params['op'] == 'HeroAtt' else None)
+        oponent = RandomPlayer() if params['op'] == 'Random' else (HeroAttPlayer() if params['op'] == 'HeroAtt' else HeuristicPlayer())
         players = [MTCSPlayer(params['cp'], params['time'], params['expand'], params['playout']), oponent]
         g = Game(players if params['first'] == 'mtcs' else players[::-1], can_print=False, gather_metadata=True)
         wid, moves, num_turns, mtcs_sizes, mtcs_num_ppls, other_num_ppls, mtcs_table_scores, other_table_scores = g.play()

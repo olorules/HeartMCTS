@@ -16,7 +16,9 @@ class Game:
         mtcs_size = None
         done = False
         while not done:
-            if self.players[self.state.player_turn].name == 'MTCSPlayer' or self.players[self.state.player_turn].name == 'RandomPlayer':
+            if self.players[self.state.player_turn].name == 'MTCSPlayer' or\
+                self.players[self.state.player_turn].name == 'RandomPlayer' or\
+                self.players[self.state.player_turn].name == 'HeuristicPlayer':
                 actions = self.players[self.state.player_turn].move(self.state)
                 for action in actions:
                     print(action) if self.can_print else None
