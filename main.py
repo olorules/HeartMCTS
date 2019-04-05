@@ -5,16 +5,23 @@ import pandas as pd
 import datetime
 import itertools
 from multiprocessing import Pool
-import functools
 import time
+import pickle as pkl
+
 
 def runner(params):
-    np.random.seed(params['seed'])
-    g = Game([MTCSPlayer(params['cp'], params['time']), RandomPlayer()])
-    score = g.play()
-    ret = params.copy()
-    ret.update({'wid': score})
-    return ret
+    try:
+        np.random.seed(params['seed'])
+        oponent = RandomPlayer() if params['op'] == 'Random' else (HeroAttPlayer() if params['op'] == 'HeroAtt' else None)
+        players = [MTCSPlayer(params['cp'], params['time'], params['expand'], params['playout']), oponent]
+        g = Game(players if params['first'] == 'mtcs' else players[::-1], can_print=False, gather_metadata=True)
+        wid, moves, num_turns, mtcs_sizes = g.play()
+        ret = params.copy()
+        ret.update({'won': wid if params['first'] != 'mtcs' else (1-wid), 'moves': moves, 'num_turns': num_turns, 'mtcs_sizes': mtcs_sizes})
+        return ret
+    except:
+        return None
+
 
 def expand_space(param_dict, keys=None, params=None):
     if keys is None:
@@ -35,6 +42,27 @@ def main():
     np.random.seed(986465)
     timestamp = datetime.datetime.now()
     params_space = {
+        'cp': [0, 0.05, 0.1, 0.2, 0.3, 0.5, 0.7, 0.85, 1.0],
+        'time': [0.1, 1, 5],
+        'expand': [
+            'Full',
+            'PlayCardNum',
+            'PlayCardScr',
+        ],
+        'playout': [
+            'Random',
+            'Heur',
+            'HeurAgent',
+        ][1:2],
+        'first': [
+            'mtcs',
+            'op'
+        ],
+        'op': [
+            'Random',
+            'HeroAtt',
+            'Board',
+        ][0:2],
         'seed': [
             642406694, 614399897, 192497555, 172242113, 864437623, 430577642,
             572867839, 561357409, 573605626, 813832390, 293706663, 100232327,
@@ -46,10 +74,8 @@ def main():
             570437402, 939545249, 483485403, 874809671, 342805290,  22453175,
             984587518, 623303278,  77088379, 519099333,   2470081, 893640279,
             882546828, 965127427, 556482657, 217053156, 373308154, 353759006,
-            782992762,  14787852, 839767898, 504966386
-        ][:8],
-        'cp': [0, 0.05, 0.1, 0.2, 0.3, 0.5, 0.7, 0.85, 1.0],
-        'time': [0.1, 1, 5, 10]
+            782992762,  14787852, 839767898, 504966386,
+        ],
     }
     params_space_size = np.prod([len(v) for v in params_space.values()])
     name = str(timestamp).replace(' ', '_').replace('-', '.').replace(':', '.')
@@ -63,19 +89,31 @@ def main():
     log = pd.DataFrame()
     cache = []
     cache_size = 30
-    for i, v in enumerate(pool.imap(runner, expand_space(params_space), chunksize=10)):
-        cache.append(v)
-        print('{:4d}/{:4d}, {:3.3f}s'.format(i, params_space_size, time.time() - time_start))
-        if len(cache) >= cache_size:
-            log = log.append(cache, ignore_index=True)
-            cache.clear()
-            log.to_hdf(name + '_{:04d}of{:04d}.hdf'.format(i, params_space_size), key='key')
-            print('flushed')
+    for i, v in enumerate(pool.imap(runner, expand_space(params_space), chunksize=5)):
+        if v is not None:
+            cache.append(v)
+            print('{:4d}/{:4d}, {:3.3f}s'.format(i, params_space_size, time.time() - time_start))
+            if len(cache) >= cache_size:
+                log = log.append(cache, ignore_index=True)
+                cache.clear()
+                log.to_hdf(name + '_{:04d}of{:04d}.hdf'.format(i, params_space_size), key='key')
+                print('flushed')
+    if len(cache) > 0:
+        log = log.append(cache, ignore_index=True)
+        cache.clear()
+        log.to_hdf(name + '.hdf', key='key')
+        print('flushed2')
 
+    # TODO serialize match history
     # full flush
     log.to_excel(name + '.xlsx')
-    print('Avg win ratio for MTCS: {}'.format(log['wid'].mean()))
-    print(log.groupby(['cp']).mean())
+    pd.set_option('display.max_rows', 500)
+    pd.set_option('display.max_columns', 500)
+    pd.set_option('display.width', 1000)
+    print('Avg win ratio for MTCS: {}'.format(log['won'].mean()))
+    print(log.groupby(['cp', 'expand']).mean())
+    #print([np.unique(e, return_counts=True) for e in log['moves']])
+    #print([[v[4] for v in l] for l in list([log.values[e.values] for e in log.groupby(['cp']).groups.values()])])  # 'mtces_sizes'
     a = 0
 
 if __name__ == "__main__":
