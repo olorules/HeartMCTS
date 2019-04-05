@@ -1,7 +1,8 @@
 from Deck import HAND_SIZE, id_from, Deck
 from Card import Card, CardType
 import itertools
-from Action import Action
+TABLE_SIZE = 5
+
 
 class HalfState: # player state
     def __init__(self, deck, hand=None, on_table=None, trash=None, hp=20, mana=0, times_taken_dmg=0):
@@ -134,10 +135,10 @@ class GameState:
         self.turn_index += 1
 
     def make_action(self, action_id, id1=None, id2=None):
-        if action_id == Action.PlayCard:
+        if action_id == 0:
             #play card
             self.curr_player().play_card(id1)
-        elif action_id == Action.AttCardOnCard:
+        elif action_id == 1:
             #att card on card
             card = id_from(self.curr_player().on_table, id1)
             target = id_from(self.other_player().on_table, id2)
@@ -148,14 +149,14 @@ class GameState:
             if target.hp <= 0:
                 self.other_player().on_table.remove(target)
             card.can_att = False
-        elif action_id == Action.AttackHero:
+        elif action_id == 2:
             #att card on hero
             card = id_from(self.curr_player().on_table, id1)
             self.other_player().hp -= card.att
             card.can_att = False
         elif action_id == 3: # check possible attacks
-            print(list(self.possible_plays()))
-
+            #print(list(self.possible_plays()))
+            print(self.rate_board())
 
     def possible_plays(self):
         res = []
@@ -166,6 +167,15 @@ class GameState:
             res.append(poss_attacks)
         #return res
         return itertools.product(*res)
+
+    def rate_board(self):
+        res = 0
+        res += self.curr_player().hp * 0 - self.other_player().hp *(-0.1)
+        for card in self.curr_player().on_table:
+            res = res + card.att * 1.2 + card.hp
+        for card in self.other_player().on_table:
+            res -= card.att * 1.2 + card.hp
+        return res
 
     def __eq__(self, other):
         return self.player_turn == other.player_turn and \

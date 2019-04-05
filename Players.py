@@ -6,8 +6,9 @@ from random import sample
 from States import GameState
 from Action import Action
 from Tree import Tree
-from Deck import Deck, TABLE_SIZE, HAND_SIZE, id_from, calc_att_plus_hp_for_cards
+from Deck import Deck, TABLE_SIZE, HAND_SIZE
 from Game import Game
+import pandas as pd
 
 def list_of_combs(arr, max_len):
     combs = []
@@ -34,12 +35,63 @@ class RandomPlayer:
         spots_on_table = TABLE_SIZE - len(curr_table)
 
         lst_of_plays = list_of_possible_card_plays(curr_hand, spots_on_table, state.curr_player().mana)
+
         all_posible_plays = [a + b for a, b in list(itertools.product(lst_of_plays,
                                                                      [list(e) for e in state.possible_plays()]))]
 
         smpl = sample(all_posible_plays, k=1)
         return smpl[0]
 
+
+class HeuristicPlayer:
+    def __init__(self):
+        self.name = 'HeuristicPlayer'
+
+    def move(self, state: GameState):
+
+        curr_hand = state.curr_player().hand
+        curr_table = state.curr_player().on_table
+        other_table = state.other_player().on_table
+        spots_on_table = TABLE_SIZE - len(curr_table)
+
+        if(sum([card.att for card in curr_table]) > state.other_player().hp):
+            return[[2, card.id] for card in curr_table]
+
+        # Best set of cards to be played
+        plays = list_of_combs(curr_hand, spots_on_table)
+        hand_move = []
+        act_mana = 0
+        act_crds = 9999
+        for play in plays:
+            cost_to_play = [card.cost for card in play]
+            if np.sum(cost_to_play) <= state.curr_player().mana:
+                if np.sum(cost_to_play) > act_mana:
+                    if len(cost_to_play) < act_crds:
+                        hand_move = [[Action.PlayCard, card.id] for card in play]  # this will be played from hand
+                        act_mana = np.sum(cost_to_play)
+                        act_crds = len(cost_to_play)
+
+        # Chose best attack option based on rate_board method
+        board_values = []
+        possible_attacks = list(state.possible_plays())
+        for attacks in possible_attacks:
+            state_cp = state.copy()
+
+            for attack in attacks:
+                if len(attack) == 2:
+                    state_cp.make_action(attack[0],attack[1])
+                else:
+                    if(attack[2] in [card.id for card in state_cp.other_player().on_table]):
+                        state_cp.make_action(attack[0], attack[1], attack[2])
+            board_values.append(state_cp.rate_board())
+        att_move = possible_attacks[np.argmax(np.array(board_values))]
+
+
+        if len(hand_move) ==0:
+            return att_move
+        if len(att_move) == 0:
+            return hand_move
+        return list(att_move)+ hand_move
 
 class HeroAttPlayer:
     def __init__(self):
@@ -84,9 +136,6 @@ class MTCSPlayer:
             self.fresh = True
             self.node_type = node_type
 
-        def num_nodes(self):
-            return 1 + np.sum([c.num_nodes() for c in self.children])
-
         def calc_score(self,  c):
             return (self.q / self.n) + c * np.sqrt((2 * np.log(self.parent.n)) / self.n) if self.n > 0 else -99999999
 
@@ -104,7 +153,7 @@ class MTCSPlayer:
                 self.q += delta  # delta*n
                 return 0 if delta == 1 else 0
 
-        def gen_all_child_states(self, expand_type):
+        def gen_all_child_states(self):
             if self.node_type == 'random':
                 curr_deck = self.game_state.curr_player().deck
                 other_deck = self.game_state.other_player().deck
@@ -120,56 +169,36 @@ class MTCSPlayer:
                     new_children.append(MTCSPlayer.MTCSNode(new_state, node_type='move', card_type=t, prob=p))
                 self.add_children(new_children)
             elif self.node_type == 'move':
-                if expand_type == 'Full':
-                    curr_hand = self.game_state.curr_player().hand
-                    curr_table = self.game_state.curr_player().on_table
-                    spots_on_table = TABLE_SIZE - len(curr_table)
-                    legal_play_cards = list_of_possible_card_plays(curr_hand, spots_on_table, self.game_state.curr_player().mana)
-                    all_posible_plays = [a + b for a, b in list(itertools.product(legal_play_cards, [list(e) for e in self.game_state.possible_plays()]))]
-                    new_children = []
-                    for nsa in all_posible_plays:
-                        try:
-                            new_state = self.game_state.copy()
-                            for a in nsa:
-                                new_state.make_action(*a)
-                            new_children.append(MTCSPlayer.MTCSNode(new_state, node_type='random', actions_from_parent=nsa))
-                        except:
-                            pass
-                    self.add_children(new_children)
-                elif expand_type == 'PlayCardNum' or expand_type == 'PlayCardScr':
-                    curr_hand = self.game_state.curr_player().hand
-                    curr_table = self.game_state.curr_player().on_table
-                    spots_on_table = TABLE_SIZE - len(curr_table)
-                    legal_play_cards = list_of_possible_card_plays(curr_hand, spots_on_table, self.game_state.curr_player().mana)
-                    k = 2 if len(legal_play_cards) < 5 else 4
-                    scores = [len(e) for e in legal_play_cards] if expand_type == 'PlayCardNum' else \
-                        [calc_att_plus_hp_for_cards(cards) for cards in [[id_from(self.game_state.curr_player().hand, play[1]) for play in plays] for plays in legal_play_cards]]
-                    best_inds = np.argpartition(scores, -k)[-k:]
-                    all_posible_plays = [a + b for a, b in list(itertools.product([legal_play_cards[i] for i in best_inds], [list(e) for e in self.game_state.possible_plays()]))]
-                    new_children = []
-                    for nsa in all_posible_plays:
-                        try:
-                            new_state = self.game_state.copy()
-                            for a in nsa:
-                                new_state.make_action(*a)
-                            new_children.append(MTCSPlayer.MTCSNode(new_state, node_type='random', actions_from_parent=nsa))
-                        except:
-                            pass
-                    self.add_children(new_children)
-                else:
-                    raise Exception('bad expand_type value')
+                # TODO: make it better, attacks are a subset
+                curr_hand = self.game_state.curr_player().hand
+                curr_table = self.game_state.curr_player().on_table
+                other_table = self.game_state.other_player().on_table
+                spots_on_table = TABLE_SIZE - len(curr_table)
+
+                legal_play_cards = list_of_possible_card_plays(curr_hand, spots_on_table, self.game_state.curr_player().mana)
+
+                all_posible_plays = [a + b for a, b in list(itertools.product(legal_play_cards, [list(e) for e in self.game_state.possible_plays()]))]
+
+                new_children = []
+                for nsa in all_posible_plays:
+                    try:
+                        new_state = self.game_state.copy()
+                        for a in nsa:
+                            new_state.make_action(*a)
+                        new_children.append(MTCSPlayer.MTCSNode(new_state, node_type='random', actions_from_parent=nsa))
+                    except:
+                        pass
+                self.add_children(new_children)
 
         def __str__(self):
             return "p: {:0=.6f}, q: {:0=4d}, n: {:0=4d}, sc: {:0=4f} | ".format(self.prob, self.q, self.n, self.q / self.n if self.n != 0 else 0) + \
                    (str(self.actions_from_parent) if self.actions_from_parent is not None else str(self.card_type))
 
-    def __init__(self, cp_base, time_per_move, expand_type, playout_type):
+    def __init__(self, cp_base, time_per_move):
         self.name = 'MTCSPlayer'
         self.tree: MTCSPlayer.MTCSNode = None
         self.time_per_move = time_per_move
         self.cp_base = cp_base
-        self.expand_type = expand_type
-        self.playout_type = playout_type
 
     def move(self, state: GameState):
         if self.tree is None:
@@ -202,7 +231,7 @@ class MTCSPlayer:
 
     def tree_policy(self, node: MTCSNode):
         if node.num_children() == 0:
-            node.gen_all_child_states(self.expand_type)
+            node.gen_all_child_states()
             if node.num_children() == 0:
                 # terminal state
                 return node
@@ -228,28 +257,14 @@ class MTCSPlayer:
             return node.get_children()[chosen]
 
     def default_policy(self, node: MTCSNode):
-        mtcs_won = None
-        if self.playout_type == 'Random':
-            players = [RandomPlayer(), RandomPlayer()]
-            new_state = node.game_state.copy()
-            game = Game(players, new_state, False)
-            starter_player_id = game.curr_player_id()
-            game.play()
-            winner_id = game.winner_id()
-            mtcs_won = 1 if winner_id == starter_player_id else 0
-        elif self.playout_type == 'Heur':
-            curr_table = node.game_state.curr_player().on_table
-            other_table = node.game_state.other_player().on_table
-            curr_hp = node.game_state.curr_player().hp
-            other_hp = node.game_state.other_player().hp
-            mtcs_won = 1 if calc_att_plus_hp_for_cards(curr_table) + curr_hp > calc_att_plus_hp_for_cards(other_table) + other_hp else 0
-        elif self.playout_type == 'HeurAgent':
-            #  todo:
-            raise Exception('not implemented playout')
-        else:
-            raise Exception('bad playout value')
-
-        return mtcs_won
+        # players = [HeroAttPlayer(), HeroAttPlayer()]
+        players = [RandomPlayer(), RandomPlayer()]
+        new_state = node.game_state.copy()
+        game = Game(players, new_state, False)
+        starter_player_id = game.curr_player_id()
+        game.play()
+        winner_id = game.winner_id()
+        return 1 if winner_id == starter_player_id else 0
 
     def backup(self, node: MTCSNode, delta):
         last_node = node
