@@ -6,9 +6,8 @@ from random import sample
 from States import GameState
 from Action import Action
 from Tree import Tree
-from Deck import Deck, TABLE_SIZE, HAND_SIZE, id_from
+from Deck import Deck, TABLE_SIZE, HAND_SIZE, id_from, calc_att_plus_hp_for_cards
 from Game import Game
-import pandas as pd
 
 def list_of_combs(arr, max_len):
     combs = []
@@ -71,8 +70,6 @@ class PlayCardPlayer:
 
         return []
 
-def calc_att_plus_hp_for_cards(cards):
-    return np.array([[c.hp, c.att] for c in cards]).sum()
 
 class MTCSPlayer:
     class MTCSNode(Tree):

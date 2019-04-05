@@ -15,9 +15,28 @@ def runner(params):
         oponent = RandomPlayer() if params['op'] == 'Random' else (HeroAttPlayer() if params['op'] == 'HeroAtt' else None)
         players = [MTCSPlayer(params['cp'], params['time'], params['expand'], params['playout']), oponent]
         g = Game(players if params['first'] == 'mtcs' else players[::-1], can_print=False, gather_metadata=True)
-        wid, moves, num_turns, mtcs_sizes = g.play()
+        wid, moves, num_turns, mtcs_sizes, mtcs_num_ppls, other_num_ppls, mtcs_table_scores, other_table_scores = g.play()
+        unique, counts = np.unique(moves, return_counts=True)
+        counts = counts / num_turns
         ret = params.copy()
-        ret.update({'won': wid if params['first'] != 'mtcs' else (1-wid), 'moves': moves, 'num_turns': num_turns, 'mtcs_sizes': mtcs_sizes})
+        ret.update({
+            'won': wid if params['first'] != 'mtcs' else (1-wid),
+            'moves': moves,
+            'num_turns': num_turns,
+            'mtcs_sizes': mtcs_sizes,
+            'num_play_card': np.sum(counts[unique == 0]),
+            'num_att_card': np.sum(counts[unique == 1]),
+            'num_att_hero': np.sum(counts[unique == 2]),
+            'avg_mtcs_size': np.mean(mtcs_sizes),
+            'mtcs_num_ppl': mtcs_num_ppls,
+            'other_num_ppl': other_num_ppls,
+            'mtcs_table_scores': mtcs_table_scores,
+            'other_table_scores': other_table_scores,
+            'avg_mtcs_num_ppl': np.mean(mtcs_num_ppls),
+            'avg_other_num_ppl': np.mean(other_num_ppls),
+            'avg_mtcs_table_scores': np.mean(mtcs_table_scores),
+            'avg_other_table_scores': np.mean(other_table_scores),
+        })
         return ret
     except:
         return None

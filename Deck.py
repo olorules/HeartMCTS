@@ -1,8 +1,11 @@
 from Card import Card
+import numpy as np
 
 HAND_SIZE = 5
 TABLE_SIZE = 5
 
+def calc_att_plus_hp_for_cards(cards):
+    return np.array([[c.hp, c.att] for c in cards]).sum()
 
 def id_from(cards: [Card], id: int):
     return [e for e in cards if e.id == id][0]

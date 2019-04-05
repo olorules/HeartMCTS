@@ -1,4 +1,4 @@
-from Deck import Deck
+from Deck import Deck, calc_att_plus_hp_for_cards
 from States import GameState
 from Action import Action
 import itertools
@@ -41,7 +41,6 @@ class Game:
                 action = self.players[self.state.player_turn].move(self.state)
                 print(action) if self.can_print else None
                 if 0 < len(action) <= 3:
-                    move.append(action)
                     self.state.make_action(*action)
                     self.draw()
                 else:
@@ -62,15 +61,23 @@ class Game:
         self.draw()
         moves = []
         sizes = []
+        mtcs_num_ppls = []
+        other_num_ppls = []
+        mtcs_table_scores = []
+        other_table_scores = []
         while not self.state.is_done():
             m, mtcs_size = self.move()
+            mtcs_num_ppls.append(len(self.state.player_states[0 if self.players[0].name == 'MTCSPlayer' else 1].on_table))
+            other_num_ppls.append(len(self.state.player_states[0 if self.players[0].name != 'MTCSPlayer' else 1].on_table))
+            mtcs_table_scores.append(calc_att_plus_hp_for_cards(self.state.player_states[0 if self.players[0].name == 'MTCSPlayer' else 1].on_table))
+            other_table_scores.append(calc_att_plus_hp_for_cards(self.state.player_states[0 if self.players[0].name != 'MTCSPlayer' else 1].on_table))
             moves.append(m)
             if mtcs_size is not None:
                 sizes.append(mtcs_size)
             # input('click enter...')
         winner_id = self.winner_id()
         print('winner chicken dinner: {}{}'.format(self.players[winner_id].name, winner_id)) if self.can_print else None
-        return winner_id, list(itertools.chain.from_iterable([[e[0] for e in m] for m in moves if len(m) > 0])), self.state.turn_index // 2 + 1, sizes
+        return winner_id, list(itertools.chain.from_iterable([[e[0] for e in m] for m in moves if len(m) > 0])), self.state.turn_index // 2 + 1, sizes, mtcs_num_ppls, other_num_ppls, mtcs_table_scores, other_table_scores
 
     def draw(self):
         if not self.can_print:
